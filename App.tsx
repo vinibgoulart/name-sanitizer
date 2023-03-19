@@ -1,9 +1,18 @@
 import {Alert, Clipboard, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View} from 'react-native';
 import {useEffect, useState} from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from "react-native-toast-message";
 
 export default function App() {
   const [names, setNames] = useState('');
+
+  const showToast = (type: "success", title: string, message?: string) => {
+    Toast.show({
+      type,
+      text1: title,
+      text2: message,
+    });
+  }
 
   const copyToClipboard = (text: string) => {
     if (text) {
@@ -27,7 +36,7 @@ export default function App() {
     }
   }
 
-  const sanitizeNames = () => {
+  const sanitizeNames = async () => {
     const splittedNames = names.split('\n')
 
     // remove duplicated values
@@ -39,14 +48,17 @@ export default function App() {
       const capitalized = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
 
       return capitalized;
-    }).sort())];
+    }).sort())].join('\n');
 
-    setNames(fomarttedNames.join('\n'))
-    saveData('names', names)
+    setNames(fomarttedNames)
+    saveData('names', fomarttedNames)
+    copyToClipboard(fomarttedNames)
+
+    showToast('success', "Dados formatados com sucesso", "Seus dados foram formatados, salvos e copiados")
   }
 
   useEffect(() => {
-    const getNames = async () => {
+    const getNames = async (): Promise<void> => {
       const data = await getData('names');
       if (data) {
         setNames(data)
@@ -66,10 +78,12 @@ export default function App() {
         }}>Name Formatter</Text>
         <View>
           <Text style={styles.title}>Como usar?</Text>
-          <Text style={styles.text}>Utilize o campo 'Nomes' para inserir todos os nomes, eles devem ser separados por
+          <Text style={styles.text}>Utilize o campo <Text style={{fontWeight: 'bold'}}>Nomes</Text> para inserir todos os nomes, eles devem ser separados por
             linha, ou seja, cada nome em uma linha.</Text>
-          <Text style={styles.text}>Após colocar os nomes você pode formatar ou salvar eles no seu dispositivo para
-            acessar futuramente.</Text>
+          <Text><Text style={{fontWeight: 'bold'}}>Copiar:</Text> copia os dados para seu dispositivo</Text>
+          <Text><Text style={{fontWeight: 'bold'}}>Limpar:</Text> limpa todos os dados</Text>
+          <Text><Text style={{fontWeight: 'bold'}}>Formatar:</Text> formata, salva e copia os dados</Text>
+          <Text><Text style={{fontWeight: 'bold'}}>Salvar:</Text> salva os dados no seu dispositivo</Text>
           <Text style={styles.text}>
             Não desinstale ou limpe os arquivos ou todos os nomes serão perdidos!
           </Text>
@@ -90,12 +104,18 @@ export default function App() {
         <View style={styles.buttonView}>
           <Pressable
             style={({pressed}) => pressed ? {...styles.buttonLeft, backgroundColor: '#f26868'} : styles.buttonLeft}
-            onPress={() => copyToClipboard(names)}>
+            onPress={() => {
+              showToast('success', "Dados copiados com sucesso")
+              copyToClipboard(names)
+            }}>
             <Text style={styles.textButton}>Copiar</Text>
           </Pressable>
           <Pressable
             style={({pressed}) => pressed ? {...styles.buttonRight, backgroundColor: '#f26868'} : styles.buttonRight}
-            onPress={() => setNames('')}>
+            onPress={() => {
+              showToast('success', "Dados resetados com sucesso")
+              setNames('')
+            }}>
             <Text style={styles.textButton}>Limpar</Text>
           </Pressable>
         </View>
@@ -106,10 +126,14 @@ export default function App() {
         </Pressable>
         <Pressable
           style={({pressed}) => pressed ? {...styles.button, backgroundColor: '#f26868'} : styles.button}
-          onPress={() => saveData('names', names)}>
+          onPress={() => {
+            showToast('success', "Dados salvos com sucesso")
+            saveData('names', names)
+          }}>
           <Text style={styles.textButton}>Salvar</Text>
         </Pressable>
       </View>
+      <Toast />
     </SafeAreaView>
   );
 }
